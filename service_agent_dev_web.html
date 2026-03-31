@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Agentforce service agent testing</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+
+  <!-- ========================= -->
+  <!--  OVERLAY + BACKDROP CSS   -->
+  <!-- ========================= -->
+  <style>
+    .overlay-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.5);
+      z-index: 9998;
+      display: none;
+    }
+
+    .overlay-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 80vw;
+      height: 100vh;
+      background: white;
+      border-right: 1px solid #ddd;
+      overflow-y: auto;
+      z-index: 9999;
+      transform: translateX(-100%);
+      transition: transform 0.35s ease-out;
+    }
+
+    .overlay-container.open {
+      transform: translateX(0);
+    }
+
+    .overlay-close {
+      position: sticky;
+      top: 12px;
+      float: right;
+      margin: 12px;
+      background: #000000aa;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      z-index: 10000;
+    }
+
+    .event-card {
+      padding: 16px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .event-card img {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+    }
+
+    .event-card .info {
+      flex: 1;
+    }
+
+    .event-card .info h3 {
+      margin: 0 0 4px;
+    }
+
+    @media (max-width: 768px) {
+      .overlay-container {
+        width: 100vw;
+      }
+    }
+  </style>
+
+  <!-- ========================= -->
+  <!--  SALESFORCE AGENT SCRIPT  -->
+  <!-- ========================= -->
+  <script type='text/javascript'>
+    function initEmbeddedMessaging() {
+      try {
+        embeddedservice_bootstrap.settings.language = 'en_US';
+
+        embeddedservice_bootstrap.init(
+          '00DUD000008uiWS',
+          'Campaign_Events_Support_Agent_Channel',
+          'https://tdcerhverv--maagent.sandbox.my.site.com/ESWCampaignEventsSuppor1774951808146',
+          {
+            scrt2URL: 'https://tdcerhverv--maagent.sandbox.my.salesforce-scrt.com'
+          }
+        );
+      } catch (err) {
+        console.error('Error loading Embedded Messaging: ', err);
+      }
+    }
+  </script>
+
+  <script type='text/javascript'
+    src='https://tdcerhverv--maagent.sandbox.my.site.com/ESWCampaignEventsSuppor1774951808146/assets/js/bootstrap.min.js'
+    onload='initEmbeddedMessaging()'>
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+</head>
+
+<body>
+
+  <h1>Your normal page content</h1>
+  <p>This stays behind the overlay.</p>
+
+  <!-- ========================= -->
+  <!--  OVERLAY + BACKDROP HTML  -->
+  <!-- ========================= -->
+  <div id="overlay-backdrop" class="overlay-backdrop"></div>
+  <div id="overlay" class="overlay-container"></div>
+
+  <!-- ========================= -->
+  <!--  OVERLAY JS CONTROLLER    -->
+  <!-- ========================= -->
+  <script>
+    function openOverlay(payload) {
+      const overlay = document.getElementById("overlay");
+      const backdrop = document.getElementById("overlay-backdrop");
+
+      backdrop.style.display = "block";
+      overlay.classList.add("open");
+
+      if (payload.type === "iframe") {
+        overlay.innerHTML = `
+          <button class="overlay-close" onclick="closeOverlay()">Close</button>
+          <iframe src="${payload.url}" style="width:100%; height:100%; border:none;"></iframe>
+        `;
+      }
+
+      if (payload.type === "events") {
+        overlay.innerHTML = `
+          <button class="overlay-close" onclick="closeOverlay()">Close</button>
+          ${payload.events.map(event => `
+            <div class="event-card">
+              <img src="${event.logoUrl}" alt="logo">
+              <div class="info">
+                <h3>${event.name}</h3>
+                <p>${event.shortDescription}</p>
+                <small>${event.startDate} → ${event.endDate}</small>
+              </div>
+            </div>
+          `).join("")}
+        `;
+      }
+    }
+
+    function closeOverlay() {
+      const overlay = document.getElementById("overlay");
+      const backdrop = document.getElementById("overlay-backdrop");
+
+      overlay.classList.remove("open");
+      backdrop.style.display = "none";
+    }
+
+    /* ==========================================
+       LISTENER FOR AGENTFORCE UI ACTION EVENTS
+       ========================================== */
+    window.addEventListener("agentforce-ui-action", (event) => {
+      const action = event.detail;
+      if (!action) return;
+
+      if (action.type === "openOverlay") {
+        openOverlay(action.payload);
+      }
+
+      if (action.type === "closeOverlay") {
+        closeOverlay();
+      }
+    });
+  </script>
+
+</body>
+</html>
